@@ -21,7 +21,7 @@ class Clip(BaseModel):
 class ClipRequest(BaseModel):
     url: str
     max_clips: int = 5
-    use_whisper: bool = True
+    use_whisper: bool = False
     ollama_model: Optional[str] = None
     auto_captions: bool = True
     vertical_9x16: bool = True
@@ -45,6 +45,10 @@ async def generate_clips(req: ClipRequest):
 
         transcript = get_youtube_transcript(req.url)
         if not transcript and req.use_whisper:
+            # guard: whisper on 512MB instances is risky for long audio
+            import os as _os
+            if _os.environ.get("RENDER") and _os.environ.get("ENABLE_WHISPER") != "true":
+                raise HTTPException(status_code=400, detail="No captions on this video. Whisper fallback is disabled on this instance (set ENABLE_WHISPER=true to enable).")
             with tempfile.TemporaryDirectory() as tmpdir:
                 audio_path = os.path.join(tmpdir, "audio.wav")
                 download_audio(req.url, audio_path)

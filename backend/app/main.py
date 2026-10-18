@@ -14,6 +14,12 @@ app.add_middleware(
 
 app.include_router(clips_router, prefix="/api")
 
+
+@app.get("/")
+def root():
+    return {"service": "reka-clipper-api", "docs": "/docs"}
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
