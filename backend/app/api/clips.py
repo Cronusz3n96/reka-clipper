@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import tempfile
@@ -21,7 +22,7 @@ class ClipRequest(BaseModel):
     url: str
     max_clips: int = 5
     use_whisper: bool = True
-    ollama_model: str = "tinyllama"
+    ollama_model: Optional[str] = None
     auto_captions: bool = True
     vertical_9x16: bool = True
 
@@ -30,37 +31,38 @@ class ClipResponse(BaseModel):
     clips: List[Clip]
     video_path: Optional[str] = None
 
+@router.get("/health")
+def health():
+    return {"status": "ok", "service": "reka-clipper-api"}
+
 @router.post("/clips", response_model=ClipResponse)
 async def generate_clips(req: ClipRequest):
     try:
-        from ..services.youtube import download_audio, get_video_info
+        from ..services.youtube import download_audio
         from ..services.transcribe import transcribe_with_whisper, get_youtube_transcript
-        from ..services.scorer import build_prompt
-        import ollama
-        
-        with tempfile.TemporaryDirectory() as tmpdir:
-            audio_path = os.path.join(tmpdir, "audio.wav")
-            download_audio(req.url, audio_path)
-            transcript = get_youtube_transcript(req.url)
-            if transcript is None or len(transcript) == 0:
+        from ..services.scorer import score_clips
+        from ..services.mirofish import mirofish_score_clip
+
+        transcript = get_youtube_transcript(req.url)
+        if not transcript and req.use_whisper:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                audio_path = os.path.join(tmpdir, "audio.wav")
+                download_audio(req.url, audio_path)
                 transcript = transcribe_with_whisper(audio_path, model_size="base")
-            if not transcript:
-                raise HTTPException(status_code=400, detail="Could not transcribe video")
-            prompt = build_prompt(transcript, req.max_clips)
-            response = ollama.generate(
-                model=req.ollama_model,
-                prompt=prompt,
-                options={"temperature": 0.7, "num_ctx": 2048, "num_predict": 800}
-            )
-            try:
-                clips_data = json.loads(response['response'])
-            except Exception:
-                clips_data = []
-            from ..services.mirofish import mirofish_score_clip
-            clips = []
-            for c in clips_data[:req.max_clips]:
-                c['score'] = mirofish_score_clip(c, transcript)
-                clips.append(Clip(**c))
-            return ClipResponse(url=req.url, clips=clips)
+        if not transcript:
+            raise HTTPException(status_code=400, detail="Could not transcribe video (no captions found and Whisper unavailable)")
+
+        try:
+            clips_data = score_clips(transcript, req.max_clips, req.ollama_model)
+        except Exception:
+            from ..services.fallback import heuristic_clips
+            clips_data = heuristic_clips(transcript, req.max_clips)
+        clips = []
+        for c in clips_data:
+            c["score"] = mirofish_score_clip(c, transcript)
+            clips.append(Clip(**c))
+        return ClipResponse(url=req.url, clips=clips)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
