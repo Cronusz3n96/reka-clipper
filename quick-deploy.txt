@@ -1,0 +1,15 @@
+Frontend live: https://reka-clipper.merrittjake65.workers.dev
+
+To get full functionality (paste YouTube URL -> AI clips):
+1. Deploy backend (FastAPI + yt-dlp + faster-whisper + moviepy + ollama client) to Render/Railway/Fly
+2. Or run locally: cd reka-clipper && bash start.sh, then use ngrok/cloudflared to expose localhost:8000
+3. Update frontend to point to your backend URL (edit frontend/src/pages/Home.jsx axios.post URL)
+
+Current stack:
+- Frontend: React + Vite + Tailwind (deployed on Cloudflare Pages/Workers)
+- Backend: FastAPI (local venv ready at backend/.venv)
+- AI: Ollama (tinyllama running locally; can use larger models if hosted)
+- Processing: yt-dlp, faster-whisper, moviepy, youtube-transcript-api
+- MiroFish-inspired scoring integrated
+
+Local test: backend at :8000, frontend at :5173 after start.sh

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Scissors, Sparkles } from 'lucide-react'
 import axios from 'axios'
+import { API_BASE_URL } from '../config'
 
 export default function Home() {
   const [url, setUrl] = useState('')
@@ -17,7 +18,7 @@ export default function Home() {
     if (!url.trim()) return
     setLoading(true)
     try {
-      const res = await axios.post('http://localhost:8000/api/clips', {
+      const res = await axios.post(`${API_BASE_URL}/api/clips`, {
         url,
         max_clips: options.maxClips,
         auto_captions: options.autoCaptions,
