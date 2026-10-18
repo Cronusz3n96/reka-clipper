@@ -4,6 +4,7 @@ uvicorn[standard]>=0.32.0
 pydantic-settings>=2.6.0
 httpx>=0.27.2
 yt-dlp>=2025.9.5
+youtube-transcript-api>=1.2.0
 faster-whisper>=1.2.0
 pydub>=0.25.1
 moviepy>=1.0.3
