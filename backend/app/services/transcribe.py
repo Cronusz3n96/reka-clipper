@@ -19,8 +19,13 @@ def _extract_video_id(url: str) -> Optional[str]:
     return None
 
 
+LAST_ERROR: str = ""
+
+
 def get_youtube_transcript(url: str) -> Optional[List[Dict[str, Any]]]:
     """Fetch YouTube captions (fast, free). Returns None if unavailable."""
+    global LAST_ERROR
+    LAST_ERROR = ""
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
 
@@ -33,7 +38,8 @@ def get_youtube_transcript(url: str) -> Optional[List[Dict[str, Any]]]:
             {"start": float(s.start), "end": float(s.start + s.duration), "text": s.text}
             for s in fetched
         ]
-    except Exception:
+    except Exception as e:
+        LAST_ERROR = f"{type(e).__name__}: {str(e)[:300]}"
         return None
 
 

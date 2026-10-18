@@ -54,7 +54,8 @@ async def generate_clips(req: ClipRequest):
                 download_audio(req.url, audio_path)
                 transcript = transcribe_with_whisper(audio_path, model_size="base")
         if not transcript:
-            raise HTTPException(status_code=400, detail="Could not transcribe video (no captions found and Whisper unavailable)")
+            from ..services.transcribe import LAST_ERROR as _TE
+            raise HTTPException(status_code=400, detail=f"No captions found and Whisper unavailable. Transcript error: {_TE}")
 
         try:
             clips_data = score_clips(transcript, req.max_clips, req.ollama_model)
