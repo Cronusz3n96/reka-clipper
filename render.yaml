@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: reka-clipper-api
+    env: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: PORT
+        value: 8000

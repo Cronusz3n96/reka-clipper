@@ -1,0 +1,11 @@
+name = "reka-clipper"
+compatibility_date = "2025-10-17"
+main = "worker.js"
+
+[assets]
+directory = "./frontend/dist"
+binding = "ASSETS"
+
+[vars]
+OLLAMA_BASE_URL = "http://localhost:11434"
+DEFAULT_OLLAMA_MODEL = "tinyllama"
